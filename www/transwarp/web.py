@@ -1,14 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import logging, os, re, cgi, sys, datetime, functools, mimetypes, threading, urllib
-from mimetypes import types_map
-import traceback
-import types
-
 
 __author__ = 'liguo'
 
-
+import logging, os, re, cgi, sys, datetime, functools, threading, urllib, traceback, types, mimetypes
 
 try:
     from cStringIO import StringIO
@@ -586,7 +581,7 @@ class StaticFileRoute(object):
         if not os.path.isfile(fpath):
             raise notfound()
         fext = os.path.splitext(fpath)[1]
-        ctx.response.content_type = types_map.get(fext.lower(), 'application/octet-stream')
+        ctx.response.content_type = mimetypes.types_map.get(fext.lower(), 'application/octet-stream')
 
 def static_file_handler(fpath):
     return "don't know how to code this method."
