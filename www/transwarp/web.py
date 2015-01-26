@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import logging, os, re, cgi, sys, datetime, functools, mimetypes, threading, urllib
+from mimetypes import types_map
+import traceback
+import types
 
-__author__='liguo'
 
-import logging, types, os, re, time, cgi, sys, datetime, functools, mimetypes, threading, urllib, traceback
+__author__ = 'liguo'
+
+
 
 try:
     from cStringIO import StringIO
@@ -86,7 +91,7 @@ class UTC(datetime.tzinfo):
         utc = str(utc.strip().upper())
         mt = _RE_TZ.match(utc)
         if mt:
-            minus = mt.group(1)=='-'
+            minus = mt.group(1) == '-'
             h = int(mt.group(2))
             m = int(mt.group(3))
             if minus:
@@ -456,11 +461,10 @@ def get(path):
     >>>
     '''
     def _decorator(func):
-        func.__web_route__=path
-        func.__web_method__='GET'
+        func.__web_route__ = path
+        func.__web_method__ = 'GET'
         return func
     return _decorator
-
 
 def post(path):
     '''
@@ -479,8 +483,8 @@ def post(path):
     >>>
     '''
     def _decorator(func):
-        func.__web_route__=path
-        func.__web_method__='POST'
+        func.__web_route__ = path
+        func.__web_method__ = 'POST'
         return func
     return _decorator
 
@@ -505,12 +509,12 @@ def _build_regex(path):
         else:
             s = ''
             for ch in v:
-                if ch>='0' and ch<='9':
-                    s +=ch
-                elif ch>='a' and ch<='z':
-                    s +=ch
-                elif ch>='A' and ch<='Z':
-                    s +=ch
+                if ch >= '0' and ch <= '9':
+                    s += ch
+                elif ch >= 'a' and ch <= 'z':
+                    s += ch
+                elif ch >= 'A' and ch <= 'Z':
+                    s += ch
                 else:
                     s += '\\%s' % ch
             re_list.append(s)
@@ -582,7 +586,10 @@ class StaticFileRoute(object):
         if not os.path.isfile(fpath):
             raise notfound()
         fext = os.path.splitext(fpath)[1]
-        ctx.response.content_type = mimetypes.types_map.get(fext.lower(), 'application/octet-stream')
+        ctx.response.content_type = types_map.get(fext.lower(), 'application/octet-stream')
+
+def static_file_handler(fpath):
+    return "don't know how to code this method."
 
 def favicon_handler():
     return static_file_handler('/favicon.ico')
@@ -616,7 +623,7 @@ class Request(object):
         fs = cgi.FieldStorage(fp=self._environ['wsgi.input'], environ=self._environ, keep_blank_values=True)
         inputs = dict()
         for key in fs:
-            inputs[key]=_convert(fs[key])
+            inputs[key] = _convert(fs[key])
         return inputs
 
     def _get_raw_input(self):
@@ -874,8 +881,8 @@ class Request(object):
             if cookie_str:
                 for c in cookie_str.split(';'):
                     pos = c.find('=')
-                    if pos>0:
-                        cookies[c[:pos].strip()] = _unquote(c[pos+1:])
+                    if pos > 0:
+                        cookies[c[:pos].strip()] = _unquote(c[pos + 1:])
             self._cookies = cookies
         return self._cookies
 
@@ -892,7 +899,7 @@ class Request(object):
         '''
         return Dict(**self._get_cookies())
 
-    def cookie(self, name, default = None):
+    def cookie(self, name, default=None):
         '''
         Return specified cookie value as unicode. Default to None if cookie not exists.
 
@@ -1143,7 +1150,7 @@ class Response(object):
          TypeError: Bad type of response code.
          '''
         if isinstance(value, (int, long)):
-            if value>=100 and value<=999:
+            if value >= 100 and value <= 999:
                 st = _RESPONSE_STATUSES.get(value, '')
                 if st:
                     self._status = '%d %s' % (value, st)
@@ -1160,11 +1167,350 @@ class Response(object):
                 raise ValueError('Bad response code: %s' % value)
         else:
             raise TypeError('Bad type of response code.')
-class Template(self, template_name, **kw):
+
+class Template(object):
+    def __init__(self, template_name, **kw):
+        '''
+        Init a template with template name, model as dict, and additional kw that will append to model.
+        >>> t = Template('hello.template', title='Hello', copyright='copyright@2015')
+        >>> t.model['title']
+        'Hello'
+        >>> t.model['copyright']
+        'copyright@2015'
+        >>> t.template_name
+        'hello.template'
+        >>> t=Template('abc.tmp', abc=u'ABC', xyz=u'XYZ')
+        >>> t.model['abc']
+        u'ABC'
+        '''
+        self.template_name = template_name
+        self.model = dict(**kw)
+
+class TemplateEngine(object):
+    '''
+    Base templete engine
+    '''
+    def call(self, path, model):
+        return '<!-- override this method to render template -->'
+
+class Jinja2TemplateEngine(TemplateEngine):
+    '''
+    Render using jinja2 template engine
+
+    >>> temp1_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'test')
+    >>> engine = Jinja2TemplateEngine(temp1_path)
+    >>> engine.add_filter('datetime', lambda dt: dt.strftime('%Y-%m-%d %H:%M:%S'))
+    >>> engine('jinja2-test.html', dict(name='Liguo', posted_at=datetime.datetime(2014, 6, 1, 10, 11, 12)))
+    '<p>Hello, Liguo.</p><span>2014-06-01 10:11:12</span>'
     '''
 
-    '''
+    def __init__(self, temp1_dir, **kw):
+        from jinja2 import Environment, FileSystemLoader
+        if not 'autoescape' in kw:
+            kw['autoescape'] = True
+        self._env = Environment(loader=FileSystemLoader(temp1_dir), **kw)
 
+    def add_filter(self, name, fn_filter):
+        self._env.filters[name] = fn_filter
+
+    def __call__(self, path, model):
+        return self._env.get_template(path).render(**model).encode('utf-8')
+
+def _default_error_hanlder(e, start_response, is_debug):
+    if isinstance(e, HttpError):
+        logging.info("HttpError: %s" % e.status)
+        headers = e.headers[:]
+        headers.append(('Content-Type', 'text/html'))
+        start_response(e.status, headers)
+        return ('<html><body><h1>%s</h1></body></html>' % e.status)
+    logging.exception("Exception:")
+    start_response('500 Internal Server Error', [('Content-Type', 'text/html'), _HEADER_X_POWERED_BY])
+    if is_debug:
+        return '_debug()'
+    return ('<html><body><h1>500 Internal Server Error</h1><h3>%s</h3></body></html>' % str(e))
+
+def view(path):
+    '''
+    A view decorator that render a view by dict.
+
+    >>> @view('test/view.html')
+    ... def hello():
+    ...        return dict(name='Bob')
+    >>> t=hello()
+    >>> isinstance(t, Template)
+    True
+    >>> @view('test/view.html')
+    ... def hello2():
+    ...        return ['a list']
+    >>> hello2()
+    Traceback (most recent call last):
+      ...
+    ValueError: Expect to return a dict when using @view() decorator.
+    '''
+    def _decorator(func):
+        @functools.wraps(func)
+        def _wrapper(*args, **kw):
+            r = func(*args, **kw)
+            if isinstance(r, dict):
+                logging.info('return Template')
+                return Template(path, **r)
+            raise ValueError('Expect to return a dict when using @view() decorator.')
+        return _wrapper
+    return _decorator
+
+_RE_INTERCEPTOR_START_WITH = re.compile(r'^([^\*\?]+)\*?$')
+_RE_INTERCEPTOR_END_WITH = re.compile(r'^\*([^\*\?]+)$')
+
+def _build_pattern_fn(pattern):
+    m = _RE_INTERCEPTOR_START_WITH.match(pattern)
+    if m:
+        return lambda p: p.startswith(m.group(1))
+    m = _RE_INTERCEPTOR_END_WITH.match(pattern)
+    if m:
+        return lambda p: p.endwith(m.group(1))
+    raise ValueError('Invalid pattern definition in interceptor.')
+
+def interceptor(pattern=''):
+    '''
+    A @interceptor decorator.
+    
+    >>> @interceptor('/admin/')
+    ... def check_admin(req, resp):
+    ...    pass
+    >>> check_admin.__interceptor__('/admin/userroot')
+    True
+    >>> check_admin.__interceptor__('/general/user1')
+    False
+    '''
+    def _decorator(func):
+        func.__interceptor__ = _build_pattern_fn(pattern)
+        return func
+    return _decorator
+
+def _build_interceptor_fn(func, fn_next):
+    def _wrapper():        
+        if func.__interceptor__(ctx.request.path_info):
+            return func(fn_next)
+        else: 
+            return fn_next()
+    return _wrapper
+
+def _build_interceptor_chain(last_fn, *interceptors):
+    '''
+    Build interceptor chain.
+    
+    >>> def target():
+    ...    print 'target'
+    ...    return 123
+    >>> @interceptor('/')
+    ... def f1(fn_next):
+    ...    print 'before f1()'
+    ...    return fn_next()
+    >>> @interceptor('/test/')
+    ... def f2(fn_next):
+    ...    print 'before f2()'
+    ...    try:
+    ...        return fn_next()
+    ...    finally:
+    ...        print 'after f2()'
+    >>> @interceptor('/')
+    ... def f3(fn_next):
+    ...    print 'before f3()'
+    ...    try:
+    ...        return fn_next()
+    ...    finally:
+    ...        print 'after f3()'
+    >>> chain = _build_interceptor_chain(target, f1, f2, f3)
+    >>> ctx.request = Dict(path_info='/test/abc')
+    >>> chain()
+    before f1()
+    before f2()
+    before f3()
+    target
+    after f3()
+    after f2()
+    123
+    >>> ctx.request = Dict(path_info='/api/')
+    >>> chain()
+    before f1()
+    before f3()
+    target
+    after f3()
+    123
+    '''
+    L = list(interceptors)
+    L.reverse()
+    fn = last_fn
+    for f in L:
+        fn = _build_interceptor_fn(f, fn)
+    return fn
+
+def _load_module(module_name):
+    '''
+    Load module form name as a str.
+    
+    >>> m = _load_module('xml')
+    >>> m.__name__
+    'xml'
+    >>> m = _load_module('xml.sax')
+    >>> m.__name__
+    'xml.sax'
+    >>> m = _load_module('xml.sax.handler')
+    >>> m.__name__
+    'xml.sax.handler'
+    '''
+    
+    last_dot = module_name.rfind('.')
+    if(last_dot==-1):
+        return __import__(module_name, locals(), globals())
+    from_module = module_name[:last_dot]
+    import_module = module_name[last_dot+1:]
+    m = __import__(from_module, locals(), globals(), [import_module])
+    return getattr(m, import_module)
+
+class WSGIApplication(object):
+    
+    def __init__(self, document_root=None, **kw):
+        '''
+        Init a WSGI application.
+        
+        Args:
+        document_root: document root path.
+        '''
+        self._running = False
+        self._document_root = document_root
+        self._interceptors= []
+        
+        self._template_engine = None
+        self._get_static = {}
+        self._post_static= {}
+        
+        self._get_dynamic = []
+        self._post_dynamic = []
+        
+    def _check_not_running(self):
+        if self._running:
+            raise RuntimeError('Cannot modify WSGIAppliccatin when it is running.')
+        
+    @property
+    def template_engine(self):
+        return self._template_engine
+    
+    @template_engine.setter
+    def template_engine(self, engine):
+        self._check_not_running()
+        self._template_engine = engine
+        
+    def add_module(self, mod):
+        self._check_not_running()
+        m = mod if type(mod) == types.ModuleType else _load_module(mod)
+        logging.info('Add module: %s' % m.__name__)
+        
+        for name in dir(m):
+            fn = getattr(m, name)
+            if callable(fn) and hasattr(fn, '__web_route__') and hasattr(fn, '__web_method__'):
+                self.add_url(fn)
+        
+    def add_url(self, func):
+        self._check_not_running()
+        route = Route(func)
+        if route.is_static:
+            if route.method == 'GET':
+                self._get_static[route.path] = route
+            elif route.method=='POST':
+                self._post_static[route.path] = route
+        else:
+            if route.method=='GET':
+                self._get_dynamic[route.path] = route
+            elif route.method=='POST':
+                self._post_dynamic[route.path] = route
+        logging.info('Add route: %s ' % str(route))
+        
+    def add_interceptor(self, func):
+        self._check_not_running()
+        self._interceptors.append(func)
+        logging.info('Add interceptor: %s' % str(func))
+        
+    def run(self, port=900, host='127.0.0.1'):
+        from wsgiref.simple_server import make_server
+        logging.info('Application (%s) will start at %s:%s...' % (self._document_root, host, port))
+        server = make_server(host, port, self.get_wsgi_application(debug=True))
+        server.server_forever()
+        
+    def get_wsgi_application(self, debug=False):
+        self._check_not_running()
+        if debug:
+            self._get_dynamic.append(StaticFileRoute)
+        self._running = True
+        
+        _application=Dict(document_root=self._document_root)
+        
+        def fn_route():
+            request_method = ctx.request.request_method
+            path_info = ctx.request.path_info
+            if request_method=='GET':
+                fn = self._get_static.get(path_info, None)
+                if fn:
+                    return fn
+                for fn in self._get_dynamic:
+                    args = fn.match(path_info)
+                    if args:
+                        return fn(*args)
+                    raise notfound()
+            elif request_method=='POST':
+                fn = self._post_static.get(path_info, None) 
+                if fn:
+                    return fn()
+                for fn in self._post_dynamic:
+                    args = fn.match(path_info)
+                    if args:
+                        return fn(*args)
+                raise notfound()
+            raise badrequest()
+    
+        fn_exec = _build_interceptor_chain(fn_route, *self._interceptors)
+    
+        def wsgi(env, start_response):
+            ctx.application = _application
+            ctx.request = Request(env)
+            response = ctx.response = Response
+            try:
+                r = fn_exec()
+                if isinstance(r, Template):
+                    r = self._template_engine(r.template_name, r.model)
+                elif isinstance(r, unicode):
+                    r = r.encode('utf-8')
+                elif r is None:
+                    r = []    
+                start_response(response.status, response.headers)
+                return r
+            except RedirectError, e:
+                response.set_header('Location', e.location)
+                start_response(response.status, response.headers)
+            except HttpError, e:
+                start_response(response.status, response.headers)
+                return ['<html><body><h1>', e.status, '</h1></body></html>']
+            except RedirectError, e:
+                logging.exception(e)
+                start_response(response.status, response.headers)
+                if not debug:
+                    start_response('500 Internal Server Error', [])
+                    return ['<html><body><h1>500 Internal Server Error<']
+                
+                exec_type, exec_value, exec_traceback = sys.exc_info()
+                fp = StringIO()
+                traceback.print_exception(exec_type, exec_value, exec_traceback,file=fp)
+                stacks = fp.getvalue()
+                fp.close()
+                start_response('500 internal server error', [])             
+                return [r'''<html><body><h1>500 Internal Server Error</h1><div style="font-family:Monaco, Menlo, Consolas, 'Courier New', monospace;"<pre>''',
+                        stacks.replace('<', '&lt;').replace('>', '&gt;'),
+                        '</pre></body></html>']
+            finally:
+                del ctx.application
+                del ctx.request
+                del ctx.response
+    
 if __name__ == '__main__':
     sys.path.append('.')
     import doctest

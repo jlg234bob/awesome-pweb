@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__author__='Liguo Jia'
+__author__ = 'Liguo Jia'
 
 '''
 Database operation module, independent to web module.
@@ -144,7 +144,7 @@ class ModelMetaclass(type):
 				if v.updateable:
 					v.updateable = False
 				primary_key = v
-			mappings[k]=v
+			mappings[k] = v
 
 		if not primary_key:
 			raise TypeError('Primary key is not defined in class %s' % name)

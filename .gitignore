@@ -52,3 +52,12 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# eclipse generated files
+tags
+*.swp
+*~
+.project
+.pydevproject
+.settings/
+

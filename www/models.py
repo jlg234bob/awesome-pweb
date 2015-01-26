@@ -23,7 +23,7 @@ class User(Model):
 	>>> n=u.insert()
 	>>> u.delete()
 	'''
-	__table__='users'
+	__table__ = 'users'
 
 	id = StringField(primary_key=True, default=next_id, ddl='varchar(50)')
 	name = StringField(ddl='varchar(50)')
@@ -44,7 +44,7 @@ class Blog(Model):
 	>>> n=b.insert()
 	>>> b.delete()
 	'''
-	__table__='blogs'
+	__table__ = 'blogs'
 
 	id = StringField(primary_key=True, default=next_id, ddl='varchar(50)')
 	user_id = StringField(updatable=False, ddl='varchar(50)')
