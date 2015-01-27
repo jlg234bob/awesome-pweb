@@ -13,7 +13,7 @@ configs = {
           'port':3306,
           'user':'root',
           'password':'jlg234bob',
-          'database':'test'
+          'database':'awesomeweb'
     },
     'session':{
         'secret':'AwEsOmE'

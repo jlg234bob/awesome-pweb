@@ -531,11 +531,21 @@ class Route(object):
     (':hello.txt', ':notepad.exe')
     >>> r()
     'test executed!'
-    >>>
+    >>> @get(r'/file/component/end')
+    ... def teststatic():
+    ...     return 'test static executed!'
+    ...
+    >>> url2 = r'/file/component/end'
+    >>> r2=Route(teststatic)
+    >>> r2.match(url2)
+    ('/file/component/end',)
+    >>> r2()
+    'test static executed!'
     '''
     def __init__(self, func):
         self.path = func.__web_route__
         self.method = func.__web_method__
+        # if path has not section like ':objectname'(which will be replaced with real value), then it is static path.
         self.is_static = _re_route.search(self.path) is None
         if not self.is_static:
             self.route = re.compile(_build_regex(self.path))
@@ -582,12 +592,19 @@ class StaticFileRoute(object):
             raise notfound()
         fext = os.path.splitext(fpath)[1]
         ctx.response.content_type = mimetypes.types_map.get(fext.lower(), 'application/octet-stream')
+        return _static_file_generator(fpath)
 
-def static_file_handler(fpath):
-    return "don't know how to code this method."
+_static_fileroute = StaticFileRoute()
 
-def favicon_handler():
-    return static_file_handler('/favicon.ico')
+# def static_file_handler(fpath):
+#     args = _static_fileroute.match(fpath)
+#     if args:
+#         return _static_fileroute(*args)
+#     else:
+#         raise notfound()
+#  
+# def favicon_handler():
+#     return static_file_handler(r'/static/favicon.ico')
 
 class MultipartFile(object):
     '''
@@ -1211,6 +1228,9 @@ class Jinja2TemplateEngine(TemplateEngine):
     def __call__(self, path, model):
         return self._env.get_template(path).render(**model).encode('utf-8')
 
+def _debug():
+    return 'to implement!'
+
 def _default_error_hanlder(e, start_response, is_debug):
     if isinstance(e, HttpError):
         logging.info("HttpError: %s" % e.status)
@@ -1221,7 +1241,7 @@ def _default_error_hanlder(e, start_response, is_debug):
     logging.exception("Exception:")
     start_response('500 Internal Server Error', [('Content-Type', 'text/html'), _HEADER_X_POWERED_BY])
     if is_debug:
-        return '_debug()'
+        return _debug()
     return ('<html><body><h1>500 Internal Server Error</h1><h3>%s</h3></body></html>' % str(e))
 
 def view(path):
@@ -1416,9 +1436,9 @@ class WSGIApplication(object):
                 self._post_static[route.path] = route
         else:
             if route.method=='GET':
-                self._get_dynamic[route.path] = route
+                self._get_dynamic.append(route)
             elif route.method=='POST':
-                self._post_dynamic[route.path] = route
+                self._post_dynamic.append(route)
         logging.info('Add route: %s ' % str(route))
         
     def add_interceptor(self, func):
@@ -1426,17 +1446,16 @@ class WSGIApplication(object):
         self._interceptors.append(func)
         logging.info('Add interceptor: %s' % str(func))
         
-    def run(self, port=900, host='127.0.0.1'):
+    def run(self, port=9009, host='127.0.0.1'):
         from wsgiref.simple_server import make_server
         logging.info('Application (%s) will start at %s:%s...' % (self._document_root, host, port))
         server = make_server(host, port, self.get_wsgi_application(debug=True))
-        server.server_forever()
+        server.serve_forever()
         
     def get_wsgi_application(self, debug=False):
         self._check_not_running()
-        if debug:
-            self._get_dynamic.append(StaticFileRoute)
         self._running = True
+        self._get_dynamic.append(_static_fileroute)
         
         _application=Dict(document_root=self._document_root)
         
@@ -1446,7 +1465,7 @@ class WSGIApplication(object):
             if request_method=='GET':
                 fn = self._get_static.get(path_info, None)
                 if fn:
-                    return fn
+                    return fn()
                 for fn in self._get_dynamic:
                     args = fn.match(path_info)
                     if args:
@@ -1468,7 +1487,7 @@ class WSGIApplication(object):
         def wsgi(env, start_response):
             ctx.application = _application
             ctx.request = Request(env)
-            response = ctx.response = Response
+            response = ctx.response = Response()
             try:
                 r = fn_exec()
                 if isinstance(r, Template):
@@ -1505,8 +1524,10 @@ class WSGIApplication(object):
                 del ctx.application
                 del ctx.request
                 del ctx.response
+        return wsgi
     
 if __name__ == '__main__':
+    print 'runing doctest...'
     sys.path.append('.')
     import doctest
     doctest.testmod()
