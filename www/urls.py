@@ -80,7 +80,7 @@ def user_interceptor(fn_next):
 
 @interceptor('/manage/')
 def manage_interceptor(fn_next):
-    user = ctx.requ.user
+    user = ctx.request.user
     if user and user.admin:
         return fn_next()
     raise seeother('/signin')
@@ -145,4 +145,29 @@ def register_user():
 @get('/register')
 def register():
     return dict()
+
+@view('manage_blog_edit.html')
+@get('/manage/blogs/create')
+def manage_blogs_create():
+    return dict(id=None, action='/api/blogs', redirect='/manage/blogs', user=ctx.request.user )
+
+@api
+@post('/api/blogs')
+def api_create_blogs():
+    check_admin()
+    i = ctx.request.input(name='', summary='', content='')
+    name = i.name.strip()
+    summary = i.summary.strip()
+    content = i.content.strip()
+    if not name:
+        raise APIValueError('name', 'name cannot be empty.')
+    if not summary:
+        raise APIValueError('summary', 'summary cannot be empty.')
+    if not content:
+        raise APIValueError('content', 'content cannot be empty.')
+    user = ctx.request.user
+    blog = Blog(user_id=user.id, user_name=user.name, name=name, summary=summary, content=content)
+    blog.insert()
+    return blog
+
 
