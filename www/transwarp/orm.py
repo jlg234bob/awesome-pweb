@@ -191,7 +191,7 @@ class Model(dict):
         >>> class User(Model):
         ...     id = IntegerField(primary_key=True)
         ...     name = StringField(nullable=False)
-        ...     passwd = StringField(nullable=False)
+        ...     password = StringField(nullable=False)
         ...     email = StringField()
         ...     last_modified = FloatField()
         ...     def pre_insert(self):
@@ -201,7 +201,7 @@ class Model(dict):
         ... 
         >>> 
         >>> n=db.update('delete from user')
-        >>> u1 = User(id=1006, name='zkl', passwd='zkl234bob', email='zkl@163.com')
+        >>> u1 = User(id=1006, name='zkl', password='zkl234bob', email='zkl@163.com')
         >>> for n in range(1501, 1506):
         ...     u1.id = n
         ...     u1.insert().id
@@ -227,7 +227,7 @@ class Model(dict):
         >>> class User(Model):
         ...     id = IntegerField(primary_key=True)
         ...     name = StringField(nullable=False)
-        ...     passwd = StringField(nullable=False)
+        ...     password = StringField(nullable=False)
         ...     email = StringField()
         ...     last_modified = FloatField()
         ...     def pre_insert(self):
@@ -237,7 +237,7 @@ class Model(dict):
         ... 
         >>> 
         >>> n=db.update('delete from user')
-        >>> u1 = User(id=1006, name='zkl', passwd='zkl234bob', email='zkl@163.com')
+        >>> u1 = User(id=1006, name='zkl', password='zkl234bob', email='zkl@163.com')
         >>> for n in range(1401, 1406):
         ...     u1.id = n
         ...     u1.insert().id
@@ -271,7 +271,7 @@ class Model(dict):
         >>> class User(Model):
         ...     id = IntegerField(primary_key=True)
         ...     name = StringField(nullable=False)
-        ...     passwd = StringField(nullable=False)
+        ...     password = StringField(nullable=False)
         ...     email = StringField()
         ...     last_modified = FloatField()
         ...     def pre_insert(self):
@@ -281,7 +281,7 @@ class Model(dict):
         ... 
         >>> 
         >>> n = db.update('delete from user')
-        >>> u1 = User(id=1006, name='zkl', passwd='zkl234bob', email='zkl@163.com')
+        >>> u1 = User(id=1006, name='zkl', password='zkl234bob', email='zkl@163.com')
         >>> for n in range(1301, 1306):
         ...     u1.id = n
         ...     u1.insert().id
@@ -307,7 +307,7 @@ class Model(dict):
         >>> class User(Model):
         ...     id = IntegerField(primary_key=True)
         ...     name = StringField(nullable=False)
-        ...     passwd = StringField(nullable=False)
+        ...     password = StringField(nullable=False)
         ...     email = StringField()
         ...     last_modified = FloatField()
         ...     def pre_insert(self):
@@ -317,7 +317,7 @@ class Model(dict):
         ... 
         >>> 
         >>> n = db.update('delete from user')
-        >>> u1 = User(id=1006, name='zkl', passwd='zkl234bob', email='zkl@163.com')
+        >>> u1 = User(id=1006, name='zkl', password='zkl234bob', email='zkl@163.com')
         >>> for n in range(1201, 1206):
         ...     u1.id = n
         ...     u1.insert().id
@@ -343,7 +343,7 @@ class Model(dict):
         >>> class User(Model):
         ...     id = IntegerField(primary_key=True)
         ...     name = StringField(nullable=False)
-        ...     passwd = StringField(nullable=False)
+        ...     password = StringField(nullable=False)
         ...     email = StringField()
         ...     last_modified = FloatField()
         ...     def pre_insert(self):
@@ -352,7 +352,7 @@ class Model(dict):
         ...             self.last_modified = time.time()
         ... 
         >>> 
-        >>> u1 = User(id=1006, name='zkl', passwd='zkl234bob', email='zkl@163.com')
+        >>> u1 = User(id=1006, name='zkl', password='zkl234bob', email='zkl@163.com')
         >>> for n in range(1101, 1106):
         ...     u1.id = n
         ...     u1.insert().id
@@ -377,7 +377,7 @@ class Model(dict):
         >>> class User(Model):
         ...     id = IntegerField(primary_key=True)
         ...     name = StringField(nullable=False)
-        ...     passwd = StringField(nullable=False)
+        ...     password = StringField(nullable=False)
         ...     email = StringField()
         ...     last_modified = FloatField()
         ...     def pre_insert(self):
@@ -385,7 +385,7 @@ class Model(dict):
         ...     def pre_update(self):
         ...             self.last_modified = time.time()
         ... 
-        >>> u1 = User(id=1006, name='zkl', passwd='zkl234bob', email='zkl@163.com')
+        >>> u1 = User(id=1006, name='zkl', password='zkl234bob', email='zkl@163.com')
         >>> u1.insert().name        
         'zkl'
         >>> u1.name = 'fal'
@@ -419,7 +419,7 @@ class Model(dict):
         >>> class User(Model):
         ...     id = IntegerField(primary_key=True)
         ...     name = StringField(nullable=False)
-        ...     passwd = StringField(nullable=False)
+        ...     password = StringField(nullable=False)
         ...     email = StringField()
         ...     last_modified = FloatField()
         ...     def pre_insert(self):
@@ -427,7 +427,7 @@ class Model(dict):
         ...     def pre_update(self):
         ...             self.last_modified = time.time()
         ... 
-        >>> u1 = User(id=1005, name='zkl', passwd='zkl234bob', email='zkl@163.com')
+        >>> u1 = User(id=1005, name='zkl', password='zkl234bob', email='zkl@163.com')
         >>> u1.insert().id        
         1005
         >>> u1.delete()
@@ -444,7 +444,7 @@ class Model(dict):
         >>> class User(Model):
         ...     id = IntegerField(primary_key=True)
         ...     name = StringField(nullable=False)
-        ...     passwd = StringField(nullable=False)
+        ...     password = StringField(nullable=False)
         ...     email = StringField()
         ...     last_modified = FloatField()
         ...     def pre_insert(self):
@@ -452,7 +452,7 @@ class Model(dict):
         ...     def pre_update(self):
         ...             self.last_modified = time.time()
         ... 
-        >>> u1 = User(id=1001, name='zkl', passwd='zkl234bob', email='zkl@163.com')
+        >>> u1 = User(id=1001, name='zkl', password='zkl234bob', email='zkl@163.com')
         >>> u1.insert().id        
         1001
         >>> 
@@ -471,6 +471,6 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     db.create_engine('root', 'jlg234bob', 'test')
     db.update('drop table if exists user')
-    db.update('create table user (id int primary key, name text, email text, passwd text, last_modified real)')
+    db.update('create table user (id int primary key, name text, email text, password text, last_modified real)')
     import doctest
     doctest.testmod()

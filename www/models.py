@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 class User(Model):
 	'''
-	>>> u=User(name='jlg', email='jlg@gmail.com', passwd='jlg234876', admin=True)
+	>>> u=User(name='jlg', email='jlg@gmail.com', password='jlg234876', admin=True)
 	>>> len(u.id)
 	50
 	>>> 
@@ -27,7 +27,7 @@ class User(Model):
 
 	id = StringField(primary_key=True, default=next_id, ddl='varchar(50)')
 	name = StringField(ddl='varchar(50)')
-	passwd = StringField(ddl='varchar(50)')
+	password = StringField(ddl='varchar(50)')
 	email = StringField(updatable=False, ddl='varchar(50)')
 	image = StringField(ddl='varchar(500)', default='no image')
 	admin = BooleanField()
@@ -35,7 +35,7 @@ class User(Model):
 
 class Blog(Model):
 	'''
-	>>> u=User(name='jlg', email='jlg@gmail.com', passwd='jlg234876', admin=True)
+	>>> u=User(name='jlg', email='jlg@gmail.com', password='jlg234876', admin=True)
 	>>> b = Blog(name='python learn cast', user_id=u.id, user_name=u.name, 
 	...     user_image= u.image, summary='About learn python from zero.',
 	...     content="Please say something, you're welcome!!")
@@ -57,7 +57,7 @@ class Blog(Model):
 
 class Comment(Model):
 	'''
-	>>> u=User(name='jlg', email='jlg@gmail.com', passwd='jlg234876', admin=True)
+	>>> u=User(name='jlg', email='jlg@gmail.com', password='jlg234876', admin=True)
 	>>> b = Blog(name='python learn cast', user_id=u.id, user_name=u.name, 
 	...     user_image= u.image, summary='About learn python from zero.',
 	...     content="Please say something, you're welcome!!")

@@ -407,7 +407,7 @@ def insert(table, **kw):
 	 
 	>>> id, name = ('1101', 'Lily')
 	>>> n=update('delete from user where id=?', id)
-	>>> d1=dict(id=id, name=name, email='%s@test.com' % name, passwd='%spwd' % name, last_modified=time.time())
+	>>> d1=dict(id=id, name=name, email='%s@test.com' % name, password='%spwd' % name, last_modified=time.time())
 	>>> insert('user', **d1)
 	1
 	>>> insert('user', **d1)
@@ -427,7 +427,7 @@ def update(sql, *args):
 
 	>>> id, name, newname=('1101', 'Lily', 'Lucy')
 	>>> n=update('delete from user where id=?', id)
-	>>> d1=dict(id=id, name=name, email='%s@test.com' % name, passwd='%spwd' % name, last_modified=time.time())
+	>>> d1=dict(id=id, name=name, email='%s@test.com' % name, password='%spwd' % name, last_modified=time.time())
 	>>> insert('user', **d1)
 	1
 	>>> args=[newname, name]
@@ -445,10 +445,10 @@ if __name__ == '__main__':
 	logging.basicConfig(level=logging.DEBUG)
 	create_engine('root', 'jlg234bob', 'test')
 	update('drop table if exists user')
-	update('create table user (id int primary key, name text, email text, passwd text, last_modified real)')
+	update('create table user (id int primary key, name text, email text, password text, last_modified real)')
 	for n in range(10):
 		d1 = dict(id='100%s' % n, name='Lily_%s' % n, email='Lily_%s@test.com' % n,
-			passwd='Lily_%spwd' % n, last_modified=time.time())
+			password='Lily_%spwd' % n, last_modified=time.time())
 		n = insert('user', **d1)
 	import doctest
 	doctest.testmod()

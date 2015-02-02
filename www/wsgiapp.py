@@ -36,11 +36,11 @@ db.create_engine(**configs.db)
 
 # insert data to users table
 def _init_users():
-    u1 = models.User(id=1006, name='zkl', passwd='zkl234bob', email='zkl@163.com')
+    u1 = models.User(id=1006, name='zkl', password='zkl234bob', email='zkl@163.com')
     u1.insert()
-    u1 = models.User(id=1007, name='Anli Fan', passwd='696325', email='zkl@163.com')
+    u1 = models.User(id=1007, name='Anli Fan', password='696325', email='zkl@163.com')
     u1.insert()
-    u1 = models.User(id=1005, name='Xuesong Wang', passwd='fsffs32343', email='zkl@163.com')
+    u1 = models.User(id=1005, name='Xuesong Wang', password='fsffs32343', email='zkl@163.com')
     u1.insert()
     logging.info('Inited table users')
 
@@ -53,6 +53,9 @@ wsgi.template_engine = template_engine
 
 
 wsgi.add_module(urls)
+wsgi.add_interceptor(urls.user_interceptor)
+wsgi.add_interceptor(urls.manage_interceptor)
+
 if __name__ == '__main__':
 #     _init_users()
     wsgi.run(9009)

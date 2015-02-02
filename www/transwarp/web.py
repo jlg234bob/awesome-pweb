@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-__author__ = 'liguo'
+from jinja2 import Environment, FileSystemLoader
 
 import logging, os, re, cgi, sys, datetime, functools, threading, urllib, traceback, types, mimetypes
 
@@ -9,6 +8,8 @@ try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
+
+__author__ = 'liguo'
 
 # thread local object to store request and response:
 ctx = threading.local()
@@ -552,9 +553,12 @@ class Route(object):
         self.func = func
 
     def match(self, url):
-        m = self.route.match(url)
-        if m:
-            return m.groups()
+        if self.is_static:
+            return (url,)
+        else:
+            m = self.route.match(url)
+            if m:
+                return m.groups()
         return None
 
     def __call__(self, *args):
@@ -1217,7 +1221,6 @@ class Jinja2TemplateEngine(TemplateEngine):
     '''
 
     def __init__(self, temp1_dir, **kw):
-        from jinja2 import Environment, FileSystemLoader
         if not 'autoescape' in kw:
             kw['autoescape'] = True
         self._env = Environment(loader=FileSystemLoader(temp1_dir), **kw)
@@ -1276,6 +1279,7 @@ def view(path):
 _RE_INTERCEPTOR_START_WITH = re.compile(r'^([^\*\?]+)\*?$')
 _RE_INTERCEPTOR_END_WITH = re.compile(r'^\*([^\*\?]+)$')
 
+# return a function, used to test if a string match the input pattern.
 def _build_pattern_fn(pattern):
     m = _RE_INTERCEPTOR_START_WITH.match(pattern)
     if m:
@@ -1302,10 +1306,10 @@ def interceptor(pattern=''):
         return func
     return _decorator
 
-def _build_interceptor_fn(func, fn_next):
+def _build_interceptor_fn(fn_interceptor, fn_next):
     def _wrapper():        
-        if func.__interceptor__(ctx.request.path_info):
-            return func(fn_next)
+        if fn_interceptor.__interceptor__(ctx.request.path_info):
+            return fn_interceptor(fn_next)
         else: 
             return fn_next()
     return _wrapper
@@ -1376,10 +1380,10 @@ def _load_module(module_name):
     '''
     
     last_dot = module_name.rfind('.')
-    if(last_dot==-1):
+    if(last_dot == -1):
         return __import__(module_name, locals(), globals())
     from_module = module_name[:last_dot]
-    import_module = module_name[last_dot+1:]
+    import_module = module_name[last_dot + 1:]
     m = __import__(from_module, locals(), globals(), [import_module])
     return getattr(m, import_module)
 
@@ -1394,11 +1398,11 @@ class WSGIApplication(object):
         '''
         self._running = False
         self._document_root = document_root
-        self._interceptors= []
+        self._interceptors = []
         
         self._template_engine = None
         self._get_static = {}
-        self._post_static= {}
+        self._post_static = {}
         
         self._get_dynamic = []
         self._post_dynamic = []
@@ -1432,12 +1436,12 @@ class WSGIApplication(object):
         if route.is_static:
             if route.method == 'GET':
                 self._get_static[route.path] = route
-            elif route.method=='POST':
+            elif route.method == 'POST':
                 self._post_static[route.path] = route
         else:
-            if route.method=='GET':
+            if route.method == 'GET':
                 self._get_dynamic.append(route)
-            elif route.method=='POST':
+            elif route.method == 'POST':
                 self._post_dynamic.append(route)
         logging.info('Add route: %s ' % str(route))
         
@@ -1457,12 +1461,12 @@ class WSGIApplication(object):
         self._running = True
         self._get_dynamic.append(_static_fileroute)
         
-        _application=Dict(document_root=self._document_root)
+        _application = Dict(document_root=self._document_root)
         
         def fn_route():
             request_method = ctx.request.request_method
             path_info = ctx.request.path_info
-            if request_method=='GET':
+            if request_method == 'GET':
                 fn = self._get_static.get(path_info, None)
                 if fn:
                     return fn()
@@ -1471,7 +1475,7 @@ class WSGIApplication(object):
                     if args:
                         return fn(*args)
                     raise notfound()
-            elif request_method=='POST':
+            elif request_method == 'POST':
                 fn = self._post_static.get(path_info, None) 
                 if fn:
                     return fn()
@@ -1489,7 +1493,7 @@ class WSGIApplication(object):
             ctx.request = Request(env)
             response = ctx.response = Response()
             try:
-                r = fn_exec()
+                r = fn_exec() # run interceptor chain
                 if isinstance(r, Template):
                     r = self._template_engine(r.template_name, r.model)
                 elif isinstance(r, unicode):
@@ -1504,7 +1508,7 @@ class WSGIApplication(object):
             except HttpError, e:
                 start_response(response.status, response.headers)
                 return ['<html><body><h1>', e.status, '</h1></body></html>']
-            except RedirectError, e:
+            except Exception, e:
                 logging.exception(e)
                 start_response(response.status, response.headers)
                 if not debug:
@@ -1513,7 +1517,7 @@ class WSGIApplication(object):
                 
                 exec_type, exec_value, exec_traceback = sys.exc_info()
                 fp = StringIO()
-                traceback.print_exception(exec_type, exec_value, exec_traceback,file=fp)
+                traceback.print_exception(exec_type, exec_value, exec_traceback, file=fp)
                 stacks = fp.getvalue()
                 fp.close()
                 start_response('500 internal server error', [])             

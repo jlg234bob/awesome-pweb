@@ -60,10 +60,10 @@ def api(func):
         try:
             r = dump(func(*args, **kw))
         except APIError, e:
-            r = dumps(dict(error=e.error, data=e.data, message=e.message))
+            r = dump(dict(error=e.error, data=e.data, message=e.message))
         except Exception, e:
             logging.exception(e)
-            r = dumps(dict(error='interal error', data=e.__class__.__name__, message=e.message))
+            r = dump(dict(error='interal error', data=e.__class__.__name__, message=e.message))
         ctx.response.content_type = 'application/json'
         return r
     return _wrapper
