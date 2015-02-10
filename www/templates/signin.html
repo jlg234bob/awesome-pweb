@@ -16,41 +16,41 @@
     <script src="/static/js/awesome.js"></script>
     <script>
     
-    $(function() {
-        var vm = new Vue({
-            el: '#form-signin',
-            data: {
-                email: '',
-                password: '',
-                remember: false
-            },
-            methods: {
-                submit: function(event) {
-                    event.preventDefault();
-                    var email = this.email.trim().toLowerCase();
-                    showError();
-                    startLoading();
-                    postApi('/api/authenticate', {
-                            email: email,
-                            password: CryptoJS.MD5(this.password).toString(),
-                            remember: this.remember    
-                        },
-                        function (err, r) {
-                            if (err) {
-                                showError(err);
+        $(function() {
+            var vm = new Vue({
+                el: '#form-signin',
+                data: {
+                    email: '',
+                    password: '',
+                    remember: false
+                },
+                methods: {
+                    submit: function(event) {
+                        event.preventDefault();
+                        var email = this.email.trim().toLowerCase();
+                        showError();
+                        startLoading();
+                        postApi('/api/authenticate', {
+                                email: email,
+                                password: CryptoJS.MD5(this.password).toString(),
+                                remember: this.remember    
+                            },
+                            function (err, r) {
+                                if (err) {
+                                    showError(err);
+                                }
+                                else {
+                                    return location.assign(r.admin ? '/manage' : '/');
+                                }
+                                stopLoading();
                             }
-                            else {
-                                return location.assign(r.admin ? '/manage' : '/');
-                            }
-                            stopLoading();
-                        }
-                    );
+                        );
+                    }
                 }
-            }
-        });
-    }); 
+            });
+        }); 
     
-</script>
+    </script>
 </head>
 <body class="uk-height-1-1">
     <div class="uk-vertical-align uk-text-center, uk-height-1-1">

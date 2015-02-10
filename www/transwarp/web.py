@@ -490,18 +490,22 @@ def _build_regex(path):
     r'''
     Convert route path to regex.
     >>> _build_regex('/path/to/:file')
-    '^\\/path\\/to\\/(?P<file>[^\\/]+)$'
+    '^\\/path\\/to\\/\\:(?P<file>[^\\/]+)$'
     >>> _build_regex('/:user/:comments/list')
-    '^\\/(?P<user>[^\\/]+)\\/(?P<comments>[^\\/]+)\\/list$'
+    '^\\/\\:(?P<user>[^\\/]+)\\/\\:(?P<comments>[^\\/]+)\\/list$'
     >>> _build_regex(':id-:pid/:w')
-    '^(?P<id>[^\\/]+)\\-(?P<pid>[^\\/]+)\\/(?P<w>[^\\/]+)$'
+    '^\\:(?P<id>[^\\/]+)\\-\\:(?P<pid>[^\\/]+)\\/\\:(?P<w>[^\\/]+)$'
+    >>> r = re.compile(_build_regex('/path/to/:file'))
+    >>> m = r.match('/path/to/:data.txt')
+    >>> m.group('file')
+    'data.txt'
     '''
     re_list = ['^']
     is_var = False
     for v in _re_route.split(path):
         if is_var:
             var_name = v[1:]
-            re_list.append('(?P<%s>[^\/]+)' % var_name)
+            re_list.append('\:(?P<%s>[^\/]+)' % var_name)
         else:
             s = ''
             for ch in v:
@@ -529,7 +533,7 @@ class Route(object):
     >>> url = '/:hello.txt/to/:notepad.exe/end'
     >>> r=Route(test)
     >>> r.match(url)
-    (':hello.txt', ':notepad.exe')
+    ('hello.txt', 'notepad.exe')
     >>> r()
     'test executed!'
     >>> @get(r'/file/component/end')
@@ -1474,7 +1478,7 @@ class WSGIApplication(object):
                     args = fn.match(path_info)
                     if args:
                         return fn(*args)
-                    raise notfound()
+                raise notfound()
             elif request_method == 'POST':
                 fn = self._post_static.get(path_info, None) 
                 if fn:
@@ -1505,6 +1509,7 @@ class WSGIApplication(object):
             except RedirectError, e:
                 response.set_header('Location', e.location)
                 start_response(response.status, response.headers)
+                return ['<html><body><h1>', e.status, '</h1></body></html>']
             except HttpError, e:
                 start_response(response.status, response.headers)
                 return ['<html><body><h1>', e.status, '</h1></body></html>']
